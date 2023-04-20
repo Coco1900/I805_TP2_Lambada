@@ -96,7 +96,7 @@ expr ::= NOT:op expr:e {: RESULT = new Noeud("!", e); :}
        | NIL {: RESULT = null; :}
        | ENTIER:n {: RESULT = new Noeud(n); :}
        | IDENT:id {:
-            RESULT = new Noeud(id);
+            RESULT = new Noeud("IDENT",new Noeud(id));
             //vars.put(id);
         :}
        | PAR_G sequence:e PAR_D {: RESULT = e; :}

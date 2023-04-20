@@ -7,7 +7,7 @@ public class Noeud<T> {
         private Noeud rightChild;
 
 
-        public Noeud(T value, Noeud leftChild, Noeud rightChild){
+        public Noeud(T value, Noeud leftChild, Noeud rightChild) {
             this.value = value;
             this.leftChild = leftChild;
             this.rightChild = rightChild;
@@ -45,54 +45,80 @@ public class Noeud<T> {
         }
 
         public void production(){
-            String res= "DATA SEGMENT";
+            String res= "DATA SEGMENT\n";
             res+= dataSegment();
             res+="\n DATA ENDS";
 
-            res+="\n CODE SEGMENT";
+            res+="\n CODE SEGMENT\n";
             res+=codeSegment();
             res+="\n CODE ENDS";
             System.out.println(res);
         }
 
         public String codeSegment(){
-            System.out.println("VALUE HERE /"+this.value.toString());
+            System.out.println("VALUE HERE : "+this.value.toString());
+            String str="";
+            //return this.value.toString();
             switch(this.value.toString()) {
                 case "let":
-                    System.out.println("in eax\n mov"+this.leftChild.value.toString()+",eax");
-                    return this.rightChild.codeSegment() +"in eax\n mov"+this.leftChild.value.toString()+",eax";
+                    System.out.println(this.rightChild.codeSegment() +"\n mov eax, "+this.leftChild.value.toString()+"\n");
+                    return this.rightChild.codeSegment() +"\n mov eax, "+this.leftChild.value.toString()+"\n";
+                    //return this.rightChild.codeSegment() +"\n mov"+this.leftChild.value.toString()+",eax";
                 case "IF":
                   // code block
-                  break;
-                case "MOD":
+                    return "";
+                case "mod":
                   // code block
-                  break;
+                    return "";
                 case "+":
-                  // code block
-                  break;
-                 case "-":
-                  // code block
-                  break;
-                 case "/":
-                  // code block
-                  break;
+                    // code block
+                    return(this.calc() + "add eax, ebx\n" + "push eax\n");
+                case "-":
+                    return(this.calc() + "sub eax, ebx \n" + "push eax \n");
+                case "/":
+                    return(this.calc() + "mul eax, ebx\n" + "push eax\n");
                 case "*":
-                  // code block
-                  break;
+                    return(this.calc()+ "div eax, ebx\n" +"push eax \n");
                 case ">=":
                   // code block
-                  break;
+                    return"";
                 case ">":
                   // code block
-                  break;
+                    return"";
+                case "IDENT":
+                    return "mov eax, "+this.leftChild.value.toString();
+                case "!":
+                    return"";
+                case "and":
+                    return"";
+                case "or":
+                    return"";
+                case "equal":
+                    return"";
+                case "INPUT":
+                    System.out.println();
+                    return "in eax \n "+ this.leftChild.codeSegment();
+                case "OUTPUT":
+                    return"";
+                case "MOINS_UNAIRE":
+                    return"";
                 case ";":
-                  // code block
-                  break;
+                    //return this.leftChild.toString();
+                    str = leftChild.codeSegment();
+                    if(this.rightChild!=null) str += rightChild.codeSegment();
+                    return str;
+                    //return leftChild.codeSegment()+ rightChild.codeSegment();
                 default:
+                    System.out.println("mov "+this.value.toString()+", eax\n");
+                    //return "";
+                    return "mov "+this.value.toString()+",eax\n";
                   // code block
               }
-              
-            return "";
+
+        }
+
+        public String calc(){
+            return(this.leftChild.codeSegment() + "push eax \n"  + this.rightChild.codeSegment()+"pop ebx \n");
         }
 
         public String dataSegment(){
