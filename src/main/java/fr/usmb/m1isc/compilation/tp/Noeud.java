@@ -1,5 +1,8 @@
 package fr.usmb.m1isc.compilation.tp;
 
+import java.io.FileWriter;
+import java.io.IOException;
+
 public class Noeud<T> {
 
         private final T value;
@@ -45,15 +48,25 @@ public class Noeud<T> {
         }
 
         public void production(){
-            String res= "DATA SEGMENT\n";
+            String res= "DATA SEGMENT";
             res+= dataSegment();
-            res+="\n DATA ENDS";
+            res+="\nDATA ENDS";
 
-            res+="\n CODE SEGMENT\n";
+            res+="\nCODE SEGMENT";
             res+=codeSegment();
-            res+="\n CODE ENDS";
+            res+="\nCODE ENDS";
             System.out.println(res);
+
+            try {
+                FileWriter fw = new FileWriter("abcd.asm");
+                fw.write(res);
+                fw.close();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
         }
+
+        private static int id_niveau=0;
 
         public String codeSegment(){
             System.out.println("VALUE HERE : "+this.value.toString());
@@ -62,46 +75,62 @@ public class Noeud<T> {
             switch(this.value.toString()) {
                 case "let":
                     System.out.println(this.rightChild.codeSegment() +"\n mov eax, "+this.leftChild.value.toString()+"\n");
-                    return this.rightChild.codeSegment() +"\n mov eax, "+this.leftChild.value.toString()+"\n";
+                    return this.rightChild.codeSegment() +"\n\tmov "+this.leftChild.value.toString()+", eax";
                     //return this.rightChild.codeSegment() +"\n mov"+this.leftChild.value.toString()+",eax";
+                case "WHILE":
+                    id_niveau++;
+                    return("\ndebut_while_"+id_niveau+":"+this.leftChild.codeSegment()+"\n\tjz sortie_while_"+id_niveau+this.rightChild.codeSegment()
+                            +"\n\tjmp debut_while_"+id_niveau+"\nsortie_while_"+id_niveau+":");
                 case "IF":
-                  // code block
-                    return "";
+                    id_niveau++;
+                    return( this.leftChild.codeSegment()+"\n\tjz faux_if_"+id_niveau+this.rightChild.codeSegment()+"\n\tjmp sortie_if_"+id_niveau
+                            +"\nfaux_if_"+id_niveau+" :"+ this.rightChild.codeSegment()+"\nsortie_if_"+id_niveau+" :");
                 case "mod":
-                  // code block
-                    return "";
+                    return (this.rightChild.codeSegment()+"\n\tpush eax"+this.leftChild.codeSegment()
+                            +"\n\tpop ebx"+"\n\tmov ecx, eax"+"\n\tdiv ecx, ebx"+"\n\tmul ecx, ebx"+"\n\tsub eax, ecx");
                 case "+":
                     // code block
-                    return(this.calc() + "add eax, ebx\n" + "push eax\n");
+                    return(this.calc() + "\n\tadd eax, ebx");
                 case "-":
-                    return(this.calc() + "sub eax, ebx \n" + "push eax \n");
+                    return(this.calc() + "\n\tsub ebx, eax"+"\n\tmov eax, ebx");
                 case "/":
-                    return(this.calc() + "mul eax, ebx\n" + "push eax\n");
+                    return(this.calc() + "\n\tdiv ebx, eax"+"\n\tmov eax, ebx");
                 case "*":
-                    return(this.calc()+ "div eax, ebx\n" +"push eax \n");
+                    return(this.calc()+ "\n\tmul eax, ebx");
                 case ">=":
-                  // code block
-                    return"";
+                    id_niveau++;
+                    return(this.leftChild.codeSegment()+"\tpush eax\n"+this.rightChild.codeSegment()+"\n\tpop ebx"
+                            +"\n\tsub eax, ebx"+"\n\tjl faux_gte_"+id_niveau+"\n\tmov eax, 1"+"\n\tjmp sortie_gte_"+id_niveau+"\nfaux_gte_"+id_niveau+" :"
+                            +"\n\tmov eax, 0"+"\nsortie_gte_"+id_niveau+" :");
                 case ">":
-                  // code block
-                    return"";
+                    id_niveau++;
+                  return (this.leftChild.codeSegment()+"\n\tpush eax"+this.rightChild.codeSegment()+"\n\tpop ebx"
+                          +"\n\tsub eax, ebx"+"\n\tjle faux_gt_"+id_niveau+"\n\tmov eax, 1"+"\n\tjmp sortie_gt_"+id_niveau
+                          +"\nfaux_gt_"+id_niveau+" :"+"\n\tmov eax, 0"+"\nsortie_gt_"+id_niveau+" :");
                 case "IDENT":
-                    return "mov eax, "+this.leftChild.value.toString();
+                    return "\n\tmov eax, "+this.leftChild.value.toString();
                 case "!":
-                    return"";
+                    return this.leftChild.codeSegment()+"\n\tnot eax"+"\n\tadd eax, 2";
                 case "and":
-                    return"";
+                    id_niveau++;
+                    return (this.leftChild.codeSegment()+"\tpush eax\n"+this.rightChild.codeSegment()+"\tpop ebx\n\tor eax, ebx\n\tjz faux_and_"+id_niveau+"\n\tmov eax, 1\n\tjmp sortie_and_"+id_niveau+"\nfaux_and_"+id_niveau+"\n\tmov eax, 0\nsortie_and_"+id_niveau+":\n");
                 case "or":
-                    return"";
+                    id_niveau++;
+                    return (this.leftChild.codeSegment()+"\tpush eax\n"+this.rightChild.codeSegment()+"\tpop ebx\n\tor eax, ebx\n\tjz faux_or_"+id_niveau+"\n\tmov eax, 1\n\tjmp sortie_or_"+id_niveau+"\nfaux_or_"+id_niveau+"\n\tmov eax, 0\nsortie_or_"+id_niveau+":\n");
                 case "equal":
-                    return"";
+                    id_niveau++;
+                    return( this.leftChild.codeSegment()+"\tpush eax\n"
+                            +this.rightChild.codeSegment()+"\tpop ebx\n"+"\tsub eax, ebx\n"+"\tjnz faux_egal_"+id_niveau+"\n"
+                            +"\tmov eax, 1\n"+"\tjmp sortie_egal_"+id_niveau+"\n"+"faux_egal_"+id_niveau+" :\n"
+                            + "\tmov eax, 0\n"+"sortie_egal_"+id_niveau+" :\n");
                 case "INPUT":
                     System.out.println();
-                    return "in eax \n "+ this.leftChild.codeSegment();
+                    return "\n\tin eax";
                 case "OUTPUT":
-                    return"";
+                    return leftChild.codeSegment()+"\n\tout eax";
                 case "MOINS_UNAIRE":
-                    return"";
+                    System.out.println("BANANNANNANANNANANNA");
+                    return leftChild.codeSegment()+"\n\tmul eax, -1";
                 case ";":
                     //return this.leftChild.toString();
                     str = leftChild.codeSegment();
@@ -111,14 +140,14 @@ public class Noeud<T> {
                 default:
                     System.out.println("mov "+this.value.toString()+", eax\n");
                     //return "";
-                    return "mov "+this.value.toString()+",eax\n";
+                    return "\n\tmov eax, "+ this.value;
                   // code block
               }
 
         }
 
         public String calc(){
-            return(this.leftChild.codeSegment() + "push eax \n"  + this.rightChild.codeSegment()+"pop ebx \n");
+            return(this.leftChild.codeSegment() + "\n\tpush eax \n"  + this.rightChild.codeSegment()+"\n\tpop ebx \n");
         }
 
         public String dataSegment(){
@@ -128,7 +157,7 @@ public class Noeud<T> {
                 //donc la je veux verifier si on est arrive a un noeud pour declarer une variable 
                 //et la rajouter au resultat si c le cas
                 //sinon on dois continnuer dans fils gauche et droit
-                result += "\n" + this.leftChild.value + " DD";
+                result += "\n\t" + this.leftChild.value + " DD";
                 
             }
             else{
